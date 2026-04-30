@@ -1,0 +1,18 @@
+# Core PDF handling
+PyMuPDF>=1.23.0          # fitz – direct text extraction + page rasterisation
+
+# OCR (only needed for scanned / image-based PDFs)
+pytesseract>=0.3.10      # Python wrapper around Tesseract OCR
+Pillow>=10.0.0           # Image handling required by pytesseract
+
+# PDF generation
+reportlab>=4.0.0         # Pure-Python PDF writer (Type-A output)
+
+# Excel generation
+openpyxl>=3.1.0          # xlsx writer (Type-B output)
+
+# NOTE: Tesseract OCR must be installed separately and added to PATH.
+#   Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#   macOS:   brew install tesseract tesseract-lang
+#   Linux:   sudo apt install tesseract-ocr tesseract-ocr-heb
+#   The Hebrew language pack (heb.traineddata) is required.
