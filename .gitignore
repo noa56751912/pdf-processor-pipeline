@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[oc]
+
+# Virtual environments
+.venv/
+
+# Editor settings
+.vscode/
+
+# Debug output
+samples/debug_page.png
