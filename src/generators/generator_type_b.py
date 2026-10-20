@@ -92,7 +92,7 @@ def _c(ws, row, col, value="", font=None, fill=None, border=None, align=None):
 
 
 class GeneratorTypeB(BaseGenerator):
-    def generate(self, report: AttendanceReport, output_path: Path) -> None:
+    def generate(self, report: AttendanceReport, output_path: Path) -> Path:
         output_path = output_path.with_suffix(".xlsx")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -188,3 +188,4 @@ class GeneratorTypeB(BaseGenerator):
         ws.freeze_panes = ws.cell(HDR_ROW + 1, 1)
 
         wb.save(str(output_path))
+        return output_path

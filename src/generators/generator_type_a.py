@@ -179,7 +179,8 @@ def _base_style() -> TableStyle:
 # ---------------------------------------------------------------------------
 
 class GeneratorTypeA(BaseGenerator):
-    def generate(self, report: AttendanceReport, output_path: Path) -> None:
+    def generate(self, report: AttendanceReport, output_path: Path) -> Path:
+        output_path = output_path.with_suffix(".pdf")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         styles = _make_styles()
         doc = SimpleDocTemplate(
@@ -233,3 +234,4 @@ class GeneratorTypeA(BaseGenerator):
         tbl.setStyle(_base_style())
         story.append(tbl)
         doc.build(story)
+        return output_path

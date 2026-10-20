@@ -3,7 +3,9 @@ Entry point for the Attendance PDF Variant Tool.
 
 Usage
 -----
-    python main.py <input.pdf> [--out <output.pdf>] [--print-text] [--page-break]
+    python main.py <input.pdf> [--out <output>] [--print-text] [--page-break]
+
+Type-A reports are written as PDF, Type-B reports as Excel (.xlsx).
 """
 from __future__ import annotations
 
@@ -33,12 +35,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("file", type=Path, help="Input PDF path.")
     p.add_argument(
         "--out", type=Path, default=None,
-        help="Output PDF path (default: <input>_out.pdf next to the input file).",
+        help="Output path (default: <input>_out next to the input file; "
+             "Type-B reports are written as .xlsx).",
     )
     p.add_argument("--print-text", action="store_true", help="Print raw extracted text.")
     p.add_argument("--page-break", action="store_true", help="Show page breaks in --print-text output.")
-    input_path = Path("samples/n_r_10_n.pdf")
-    argv = ["samples/n_r_10_n.pdf"]
     return p.parse_args(argv)
 
 
@@ -89,8 +90,8 @@ def main(argv: list[str] | None = None) -> int:
 
     # ── Stage 5: generate ────────────────────────────────────────────────
     out_path = args.out or input_path.with_stem(input_path.stem + "_out")
-    GeneratorRegistry.get(report_type).generate(report, out_path)
-    logger.info("Output written: %s", out_path)
+    written = GeneratorRegistry.get(report_type).generate(report, out_path)
+    logger.info("Output written: %s", written)
 
     return 0
 
