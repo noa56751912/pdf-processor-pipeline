@@ -22,6 +22,7 @@ import random
 from dataclasses import replace
 from datetime import datetime, timedelta
 
+from src.durations import parse_hours
 from src.models import AttendanceRecord, AttendanceReport
 
 MAX_MINUTES: int = 5           # maximum offset in either direction (±1–5 min)
@@ -78,10 +79,7 @@ def _recompute_daily(start: datetime, end: datetime, break_hours_str: str) -> st
     if delta.total_seconds() < 0:
         delta += timedelta(hours=24)
     worked = delta.total_seconds() / 3600.0
-    try:
-        break_h = float(break_hours_str.strip())
-    except (ValueError, AttributeError):
-        break_h = 0.0
+    break_h = parse_hours(break_hours_str) or 0.0
     return f"{max(worked - break_h, 0.0):.2f}"
 
 
@@ -100,8 +98,10 @@ def jitter_record(rec: AttendanceRecord) -> AttendanceRecord:
     new_start = _safe_nudge(t_start, _random_delta())
     new_end   = _safe_nudge(t_end,   _random_delta())
 
-    # Ensure end > start (at least 1 minute of work remains)
-    if new_end <= new_start:
+    # Keep the shift's shape: an overnight shift (end before start) stays
+    # overnight, and a day shift keeps at least 1 minute of work.
+    overnight = t_end < t_start
+    if not overnight and new_end <= new_start:
         new_end = new_start + timedelta(minutes=1)
 
     new_daily = _recompute_daily(new_start, new_end, rec.break_hours)

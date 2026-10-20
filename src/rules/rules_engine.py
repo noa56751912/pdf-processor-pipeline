@@ -16,6 +16,7 @@ import logging
 from dataclasses import replace
 from datetime import datetime, timedelta
 
+from src.durations import parse_hours
 from src.models import AttendanceRecord, AttendanceReport
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class RulesEngine:
         t_start  = _parse_time(rec.start_time)
         t_end    = _parse_time(rec.end_time)
         declared = _parse_h(daily_hours)
-        break_h  = _parse_h(rec.break_hours) or 0.0
+        break_h  = parse_hours(rec.break_hours) or 0.0
         computed: float | None = None
 
         if t_start and t_end:
