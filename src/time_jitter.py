@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 
 from src.models import AttendanceRecord, AttendanceReport
 
-MAX_MINUTES: int = 10          # maximum offset in either direction
+MAX_MINUTES: int = 5           # maximum offset in either direction (±1–5 min)
 _TIME_FORMAT = "%H:%M"
 
 

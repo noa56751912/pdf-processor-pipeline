@@ -7,6 +7,7 @@ Pillow>=10.0.0           # Image handling required by pytesseract
 
 # PDF generation
 reportlab>=4.0.0         # Pure-Python PDF writer (Type-A output)
+python-bidi>=0.4.2       # BiDi algorithm for correct Hebrew/RTL text in ReportLab
 
 # Excel generation
 openpyxl>=3.1.0          # xlsx writer (Type-B output)

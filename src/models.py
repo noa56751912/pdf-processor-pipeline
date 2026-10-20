@@ -28,6 +28,7 @@ class AttendanceRecord:
     employee: str = ""      # populated by parsers that embed names per row
     raw_line: str = ""      # the original OCR/extracted line (debug aid)
     break_hours: str = ""   # "HH:MM" or decimal – break duration
+    day_of_week: str = ""   # Hebrew day name (e.g. "ראשון", "שני", …)
     anomalies: list[str] = field(default_factory=list)  # human-readable issues
 
 
@@ -53,3 +54,7 @@ class AttendanceReport:
     records: list[AttendanceRecord] = field(default_factory=list)
     total_hours: str = "00:00"
     source_pages: int = 0
+    total_working_days: str = ""   # "סה\"כ ימי עבודה לחודש"
+    total_monthly_hours: str = ""  # "סה\"כ שעות חודשיות"
+    hourly_rate: str = ""          # "מחיר לשעה"
+    total_payment: str = ""        # "סה\"כ לתשלום"

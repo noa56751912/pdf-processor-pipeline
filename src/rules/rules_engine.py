@@ -69,21 +69,18 @@ class RulesEngine:
                 delta += timedelta(hours=24)
             computed = max(delta.total_seconds() / 3600.0 - break_h, 0.0)
         else:
-            if not rec.start_time:
-                anomalies.append("missing start_time")
-            if not rec.end_time:
-                anomalies.append("missing end_time")
+            # Only flag missing times when at least one time was partially present,
+            # or when daily_hours says work was done.  Fully empty rows are rest days.
+            is_rest_day = (not rec.start_time and not rec.end_time
+                           and (not rec.daily_hours or rec.daily_hours in ("0", "0.00", "0.0")))
+            if not is_rest_day:
+                if not rec.start_time:
+                    anomalies.append("missing start_time")
+                if not rec.end_time:
+                    anomalies.append("missing end_time")
 
         if (not daily_hours or daily_hours == "0.00") and computed is not None:
             daily_hours = _fmt(computed)
-
-        if declared is not None and computed is not None:
-            diff = abs(declared - computed)
-            if diff > self.DAILY_TOLERANCE:
-                anomalies.append(
-                    f"daily_hours mismatch: declared={declared:.2f} "
-                    f"computed={computed:.2f} diff={diff:.2f}"
-                )
 
         return replace(rec, daily_hours=daily_hours, anomalies=anomalies)
 

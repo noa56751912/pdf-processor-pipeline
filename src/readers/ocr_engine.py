@@ -94,7 +94,7 @@ class TesseractOCREngine(OCREngine):
             self._configured = True
 
         try:
-            text = pytesseract.image_to_string(image, lang=lang)
+            text = pytesseract.image_to_string(image, lang=lang, config='--psm 6')
             return text.strip()
         except pytesseract.TesseractNotFoundError as exc:
             raise RuntimeError(
@@ -107,7 +107,7 @@ class TesseractOCREngine(OCREngine):
                 "Tesseract error (%s) – retrying with lang='eng'.", exc
             )
             try:
-                return pytesseract.image_to_string(image, lang="eng").strip()
+                return pytesseract.image_to_string(image, lang="eng", config='--psm 6').strip()
             except pytesseract.TesseractError as exc2:
                 logger.warning(
                     "OCR retry with 'eng' failed (%s) – returning empty text.", exc2
