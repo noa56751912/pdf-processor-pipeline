@@ -15,7 +15,10 @@ from src.parsers.base_parser import BaseParser
 
 _DATE_SLASH_RE   = re.compile(r"\b(\d{1,2}/\d{1,2}/(?:\d{2}|\d{4}))\b")
 _DATE_COMPACT_RE = re.compile(r"^(\d{2})(\d{2})(\d{2})$")
-_TIME_RE         = re.compile(r"\b(\d{1,2}:?\d{2})\b")
+# A time is 3-4 digits with an optional colon (OCR sometimes drops it), but
+# never part of a date, a decimal or a percentage: the "2023" in 01/02/2023,
+# the "110" in 110.50 and the "100" in 100% are not times.
+_TIME_RE         = re.compile(r"(?<![\d/.])(\d{1,2}:?\d{2})(?![\d%/]|\.\d)")
 _DECIMAL_RE      = re.compile(r"\b(\d{1,3}\.\d{2})\b")
 _MONETARY_RE     = re.compile(r"\b(\d{1,3}(?:,\d{3})+(?:\.\d{2})?)\b")
 _EMP_ID_RE       = re.compile(r"\b(\d{9})\b")
