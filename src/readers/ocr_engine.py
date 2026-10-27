@@ -114,6 +114,28 @@ class TesseractOCREngine(OCREngine):
                 )
                 return ""
 
+    def extract_words(self, image, lang: str, whitelist: str = "") -> list[tuple[int, str]]:
+        """
+        Run Tesseract on *image* and return every word with the height of its
+        centre.  *whitelist* limits the characters Tesseract may read, e.g.
+        digits and ':' for a time column.
+        """
+        import pytesseract
+
+        if not self._configured:
+            self._configure(pytesseract)
+            self._configured = True
+
+        config = "--psm 6" + (f" -c tessedit_char_whitelist={whitelist}" if whitelist else "")
+        data = pytesseract.image_to_data(
+            image, lang=lang, config=config, output_type=pytesseract.Output.DICT
+        )
+        return [
+            (top + height // 2, text)
+            for top, height, text in zip(data["top"], data["height"], data["text"])
+            if text.strip()
+        ]
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

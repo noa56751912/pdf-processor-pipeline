@@ -128,4 +128,12 @@ def apply_jitter(report: AttendanceReport) -> AttendanceReport:
             pass
     report.total_hours = f"{total:.2f}"
 
+    # Keep the summary block in step with the new hours, so the document
+    # still adds up: monthly hours = sum of days, payment = hours x rate.
+    if report.total_monthly_hours:
+        report.total_monthly_hours = report.total_hours
+    rate = parse_hours(report.hourly_rate.replace(",", ""))
+    if report.total_payment and rate is not None:
+        report.total_payment = f"{total * rate:,.2f}"
+
     return report

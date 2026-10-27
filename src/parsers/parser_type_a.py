@@ -15,12 +15,15 @@ OCR error correction (three dynamic strategies):
 """
 from __future__ import annotations
 
+import logging
 import re
 from datetime import date, datetime, timedelta
 from typing import Optional
 
 from src.models import AttendanceRecord, AttendanceReport
 from src.parsers.base_parser import BaseParser
+
+logger = logging.getLogger(__name__)
 
 _DATE_RE    = re.compile(r"\b(\d{1,2}/\d{1,2}/\d{2,4})\b")
 # A time is 3-4 digits with an optional colon (OCR sometimes drops it), but
@@ -235,7 +238,8 @@ class ParserTypeA(BaseParser):
         total_hours = self._extract_total(lines)
         summary = self._extract_summary(lines)
         for rec in records:
-            print(f"Date: {rec.date_text} | In: {rec.start_time} | Out: {rec.end_time} | Total: {rec.daily_hours}")
+            logger.debug("Date: %s | In: %s | Out: %s | Total: %s",
+                         rec.date_text, rec.start_time, rec.end_time, rec.daily_hours)
         return AttendanceReport(
             report_type="type_a",
             employee=employee,
@@ -261,11 +265,13 @@ class ParserTypeA(BaseParser):
                 return m.group(1)
         return ""
 
-    # Summary field regexes (flexible: value may follow colon or be on same line)
-    _SUMMARY_WORK_DAYS_RE    = re.compile(r'סה"?כ\s*ימי\s*עבודה[^\d]*(\d+)')
-    _SUMMARY_MONTHLY_HRS_RE  = re.compile(r'סה"?כ\s*שעות\s*חודשיות[^\d]*([\d.,]+)')
+    # Summary field regexes (flexible: value may follow colon or be on same line).
+    # OCR reads the abbreviation סה"כ with stray marks (סה:"כ, סה״כ), so allow
+    # any non-letters between ה and כ.
+    _SUMMARY_WORK_DAYS_RE    = re.compile(r'סה\W*כ\s*ימי\s*עבודה[^\d]*(\d+)')
+    _SUMMARY_MONTHLY_HRS_RE  = re.compile(r'סה\W*כ\s*שעות\s*חודשיות[^\d]*([\d.,]+)')
     _SUMMARY_RATE_RE         = re.compile(r'מחיר\s*לשעה[^\d]*([\d.,]+)')
-    _SUMMARY_PAYMENT_RE      = re.compile(r'סה"?כ\s*לתשלום[^\d]*([\d.,]+)')
+    _SUMMARY_PAYMENT_RE      = re.compile(r'סה\W*כ\s*לתשלום[^\d]*([\d.,]+)')
 
     def _extract_summary(self, lines: list[str]) -> dict[str, str]:
         """Extract payment summary fields from the document header area."""
@@ -303,7 +309,7 @@ class ParserTypeA(BaseParser):
         """
         # -- Header scan --
         for line in lines[:scan_lines]:
-            print(f"[DEBUG anchor scan] {line!r}")
+            logger.debug("anchor scan: %r", line)
             # Hebrew month name
             for m in _HEADER_MONTH_RE.finditer(line):
                 heb_word = m.group(1)
@@ -314,7 +320,7 @@ class ParserTypeA(BaseParser):
                 year = int(year_str)
                 if year < 100:
                     year += 2000
-                print(f"[DEBUG anchor] Hebrew match: month={month}, year={year}")
+                logger.debug("anchor: Hebrew match: month=%s, year=%s", month, year)
                 return (month, year)
             # Numeric month/year
             for m in _HEADER_MONTH_NUMERIC_RE.finditer(line):
@@ -323,7 +329,7 @@ class ParserTypeA(BaseParser):
                 else:                                   # YYYY-MM or YYYY/MM
                     month, year = int(m.group(4)), int(m.group(3))
                 if 1 <= month <= 12 and 1900 <= year <= 2100:
-                    print(f"[DEBUG anchor] Numeric match: month={month}, year={year}")
+                    logger.debug("anchor: numeric match: month=%s, year=%s", month, year)
                     return (month, year)
 
         # -- Majority-vote fallback: collect all parseable dates in document --
@@ -343,10 +349,11 @@ class ParserTypeA(BaseParser):
                 pass
         if month_year_counts:
             anchor = month_year_counts.most_common(1)[0][0]
-            print(f"[DEBUG anchor] Majority-vote fallback: month={anchor[0]}, year={anchor[1]} (counts={dict(month_year_counts)})")
+            logger.debug("anchor: majority-vote fallback: month=%s, year=%s (counts=%s)",
+                         anchor[0], anchor[1], dict(month_year_counts))
             return anchor
 
-        print("[DEBUG anchor] No anchor found.")
+        logger.debug("anchor: none found.")
         return None
 
     def _get_target_weekday(self, raw_line: str) -> Optional[int]:
@@ -421,7 +428,7 @@ class ParserTypeA(BaseParser):
         import calendar as _cal
 
         anchor = self._extract_anchor_month(lines)
-        print(f"[DEBUG] Anchor month detected: {anchor}")
+        logger.debug("Anchor month detected: %s", anchor)
 
         # ----------------------------------------------------------------
         # Step 1 – Build the authoritative calendar for this month.
@@ -475,7 +482,7 @@ class ParserTypeA(BaseParser):
                 "raw_line":    line,
             })
 
-        print(f"[DEBUG] Calendar days: {len(calendar_dates)}  |  OCR data rows: {len(data_rows)}")
+        logger.debug("Calendar days: %d  |  OCR data rows: %d", len(calendar_dates), len(data_rows))
 
         # ----------------------------------------------------------------
         # Step 3 – Slot each data row into the correct calendar day using
@@ -527,10 +534,10 @@ class ParserTypeA(BaseParser):
                 daily_hours = row_data.get("daily_hours", "")
                 raw_line    = row_data.get("raw_line",    "")
 
-            print(
-                f"[DEBUG] Row {i:>3}: {date_text}  {day_name:<6}  "
-                f"in={start_time or '--:--'}  out={end_time or '--:--'}  "
-                f"h={daily_hours or '0.00'}"
+            logger.debug(
+                "Row %3d: %s  %-6s  in=%s  out=%s  h=%s",
+                i, date_text, day_name, start_time or "--:--",
+                end_time or "--:--", daily_hours or "0.00",
             )
 
             records.append(AttendanceRecord(

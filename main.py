@@ -14,6 +14,7 @@ import logging
 import sys
 from pathlib import Path
 
+from src.readers.pdf_reader import PDFReader
 from src.readers.reader_factory import ReaderFactory
 from src.type_detector import ReportType, detect
 from src.parsers.parser_registry import ParserRegistry
@@ -66,6 +67,10 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning("Could not detect report type – aborting.")
         return 1
     logger.info("Detected: %s", report_type)
+
+    # Scanned timesheets: re-read the table cell by cell (slower, far more accurate)
+    if report_type is ReportType.TYPE_A:
+        text = PDFReader(read_tables=True).read(input_path)
 
     # ── Stage 3: parse ───────────────────────────────────────────────────
     report = ParserRegistry.get(report_type).parse(text)

@@ -25,6 +25,7 @@ import fitz  # PyMuPDF -- used only for rendering, not text extraction
 
 from .base_reader import BaseReader
 from .ocr_engine import OCREngine, TesseractOCREngine
+from .table_ocr import TableOCR
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,10 @@ class PDFReader(BaseReader):
         The OCR backend to use.  Defaults to ``TesseractOCREngine()``.
         Pass any other ``OCREngine`` subclass to switch backends without
         touching this class.
+    read_tables : bool
+        Read a ruled table cell by cell (``TableOCR``) instead of as one
+        block of text.  Slower, but far more accurate on scanned timesheets.
+        Pages without a table fall back to whole-page OCR.
     """
 
     supported_extensions: set[str] = {".pdf"}
@@ -53,10 +58,12 @@ class PDFReader(BaseReader):
         dpi: int = 300,
         lang: str = "heb+eng",
         ocr_engine: OCREngine | None = None,
+        read_tables: bool = False,
     ) -> None:
         self.dpi = dpi
         self.lang = lang
         self._ocr_engine: OCREngine = ocr_engine if ocr_engine is not None else TesseractOCREngine()
+        self._tables = TableOCR(self._ocr_engine, lang) if read_tables else None
 
     # ------------------------------------------------------------------
     # Public API
@@ -88,7 +95,9 @@ class PDFReader(BaseReader):
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat, alpha=False)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            text = self._ocr_engine.extract_text(img, self.lang)
+            text = self._tables.read_page(img) if self._tables else None
+            if text is None:
+                text = self._ocr_engine.extract_text(img, self.lang)
             logger.debug("Page %d: OCR produced %d chars.", page_index + 1, len(text))
             page_texts.append(text)
 

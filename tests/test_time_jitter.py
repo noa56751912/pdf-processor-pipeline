@@ -2,8 +2,8 @@ import random
 import unittest
 
 from src.durations import parse_hours
-from src.models import AttendanceRecord
-from src.time_jitter import MAX_MINUTES, jitter_record
+from src.models import AttendanceRecord, AttendanceReport
+from src.time_jitter import MAX_MINUTES, apply_jitter, jitter_record
 
 # Each of start and end moves at most MAX_MINUTES, so the day's hours
 # can change by at most twice that (plus rounding to two decimals).
@@ -40,6 +40,22 @@ class JitterTests(unittest.TestCase):
 
     def test_overnight_shift_keeps_its_length(self):
         self.assert_hours_close("20:00", "08:00", "", 12.0)
+
+
+class SummaryTotalsTests(unittest.TestCase):
+    def test_monthly_hours_and_payment_follow_the_new_hours(self):
+        random.seed(0)
+        report = AttendanceReport(
+            report_type="type_a",
+            records=[AttendanceRecord(date_text="01/01/2023", start_time="08:00",
+                                      end_time="11:00", daily_hours="3.00")],
+            total_hours="3.00", total_monthly_hours="3.00",
+            hourly_rate="32.35", total_payment="97.05",
+        )
+        jittered = apply_jitter(report)
+        hours = float(jittered.total_hours)
+        self.assertEqual(jittered.total_monthly_hours, jittered.total_hours)
+        self.assertEqual(jittered.total_payment, f"{hours * 32.35:,.2f}")
 
 
 if __name__ == "__main__":
